@@ -1,0 +1,43 @@
+# Node modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Builds
+dist/
+build/
+out/
+.next/
+coverage/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# HuggingFace / Transformers downloads
+*.safetensors
+*.gguf
+models/
+cache/
+transformers/
+.huggingface/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# OS files
+.DS_Store
+
+# Vite / React cache
+.vite/
+
+# Temp files
+tmp/
+temp/
