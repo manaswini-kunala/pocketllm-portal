@@ -82,19 +82,19 @@ pocketllm-portal/
 
 ```bash
 1️⃣ Clone the Repository
-git clone https://github.com/manaswini-kunala/pocketllm-portal.git
-cd pocketllm-portal
+   git clone https://github.com/manaswini-kunala/pocketllm-portal.git
+   cd pocketllm-portal
 
 2️⃣ Backend Setup (server)
    cd server
    npm install
 
-1) Create .env:
+# 1) Create .env:
    DATABASE_URL="file:./dev.db"
    JWT_SECRET="your-secret-key"
    JWT_SECRET can be any random string — it is used to sign login tokens.
 
-2) Run migrations (creates all tables):
+# 2) Run migrations (creates all tables):
    npx prisma migrate dev --name init
 
 3) Seed default users
