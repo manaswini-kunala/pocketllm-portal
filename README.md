@@ -89,16 +89,16 @@ pocketllm-portal/
    cd server
    npm install
 
-# 1) Create .env:
+## 1) Create .env:
    DATABASE_URL="file:./dev.db"
    JWT_SECRET="your-secret-key"
    JWT_SECRET can be any random string — it is used to sign login tokens.
 
 # 2) Run migrations (creates all tables):
-   npx prisma migrate dev --name init
+    npx prisma migrate dev --name init
 
-3) Seed default users
-   node prisma/seed.js
+# 3) Seed default users
+    node prisma/seed.js
 
     This creates:
     Admin:
@@ -109,21 +109,21 @@ pocketllm-portal/
     Email: user@pocketllm.com
     Password: user123
 
-4) Start backend:
-   npm start
+# 4) Start backend:
+     npm start
 
 3️⃣ Frontend Setup (client)
 
-   Open another terminal:
+ # Open another terminal:
    cd client
    npm install
    npm run dev
 
 🤖 LLM Model (Auto-Download)
 
-   On the first chat request, the backend automatically downloads:
+#  On the first chat request, the backend automatically downloads:
    Xenova/Qwen1.5-0.5B-Chat
-    •	No Hugging Face API key needed
+   •	No Hugging Face API key needed
   	•	No GPU needed
   	•	Fully CPU-only
 
