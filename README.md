@@ -55,23 +55,6 @@ It includes:
 
 ---
 
-# 🗂 Project Structure
-
-
-pocketllm-portal/
-│
-├── client/                     # React frontend
-│   ├── src/                    # React components, pages, hooks
-│   ├── public/                 # Static assets
-│   └── package.json
-│
-├── server/                     # Backend (Express + Prisma)
-│   ├── src/                    # Routes, controllers, LLM engine
-│   ├── prisma/                 # Prisma schema, migrations, seed.js
-│   ├── .env                    # Environment variables (not committed)
-│   └── package.json
-│
-└── .gitignore                  # Git ignore rules
 
 # 🛠 SETUP & INSTALLATION
 
