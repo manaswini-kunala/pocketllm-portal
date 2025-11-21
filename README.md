@@ -1,56 +1,62 @@
-🚀 PocketLLM Portal
+# 🚀 PocketLLM Portal
 
-A lightweight, local-first LLM chat application that runs entirely on CPU using Transformers.js (Xenova) and a compact Hugging Face model.
-Includes multi-turn chat, personas, session history, authentication, and an admin dashboard for monitoring & system control.
+PocketLLM Portal is a lightweight **local-first LLM chat application** that runs fully on **CPU** using  
+**Transformers.js (Xenova)** and a **Hugging Face lightweight model (Qwen1.5-0.5B-Chat)**.  
 
-⸻
+It includes:
+- Multi-turn chat  
+- Personas  
+- Session history  
+- Authentication  
+- Admin dashboard  
+- Local SQLite database  
+- CPU-only inference  
 
-✨ Features
+---
 
-🧠 Chat Interface
-	•	Clean chat UI with sidebar for conversation history
-	•	Multi-turn memory (configurable context window)
-	•	Personas: Default, Friendly, Formal, Technical
-	•	CPU-only inference using @xenova/transformers
-	•	Auto-download of Qwen model on first request
+# ✨ Features
 
-🔐 Authentication
-	•	Login system
-	•	Default admin and user accounts
-	•	Role-based access to admin dashboard
+## 🧠 Chat Interface
+- Clean UI with collapsible **conversation history sidebar**
+- Multi-turn memory (configurable)
+- Personas: **Default**, **Friendly**, **Formal**, **Technical**
+- CPU-only inference via `@xenova/transformers`
+- Auto-downloads model from Hugging Face Hub
 
-🛠 Admin Dashboard
-	•	View CPU & RAM usage
-	•	Track LLM latency + cache hits
-	•	Change model settings:
-	•	Max context messages
-	•	Max response length
-	•	Model name
-	•	Clear cache
+## 🔐 Authentication
+- JWT-based login
+- Default admin + user accounts
+- Role-based access (admin dashboard)
 
-💾 Data Persistence
+## 🛠 Admin Dashboard
+- CPU usage
+- RAM usage
+- LLM latency
+- Cache hit ratio
+- Update LLM config (context, response length, model)
+- Clear cache
 
-Powered by Prisma + SQLite:
-	•	Users
-	•	Sessions
-	•	Messages
-	•	System Config
+## 💾 SQLite Persistence
+- Users  
+- Sessions  
+- Messages  
+- SystemConfig  
 
-⸻
+---
 
-📦 Tech Stack
+# 📦 Tech Stack
 
-Frontend: React, TypeScript, Vite, Tailwind
-Backend: Node.js, Express
-Database: SQLite (Prisma ORM)
-LLM: Hugging Face model (Qwen1.5-0.5B-Chat) served locally via Xenova Transformers.js
-This satisfies both:
-	•	Hugging Face requirement
-	•	CPU-only requirement
-	•	Transformers.js engine requirement
+| Layer | Technology |
+|-------|-------------|
+| Frontend | React, TypeScript, Vite, TailwindCSS |
+| Backend | Node.js, Express |
+| Database | SQLite (Prisma ORM) |
+| LLM Runtime | Hugging Face model (`Qwen1.5-0.5B-Chat`) via Xenova Transformers.js |
 
+---
 
-🗂 Project Structure
+# 🗂 Project Structure
+
 
 pocketllm-portal/
 │
@@ -60,18 +66,23 @@ pocketllm-portal/
 │   └── package.json
 │
 ├── server/                     # Backend (Express + Prisma)
-│   ├── src/                    # API routes, controllers, LLM engine
-│   ├── prisma/                 # Schema + migrations + seed
+│   ├── src/                    # Routes, controllers, LLM engine
+│   ├── prisma/                 # Schema, migrations, seed.js
 │   ├── .env                    # Environment variables
 │   └── package.json
 │
 └── .gitignore
 
 
+---
 
-🛠 Setup & Installation
+# 🛠 SETUP & INSTALLATION 
 
-Anyone cloning the repo can run the project using these steps.
+# 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/manaswini-kunala/pocketllm-portal.git
+cd pocketllm-portal
 
 
 1️⃣ Clone Repository
