@@ -74,58 +74,103 @@ pocketllm-portal/
 └── .gitignore
 
 
+# 🛠 SETUP & INSTALLATION
+
+## 1️⃣ Clone the Repository
+
+1. Run the following:
+
+   **git clone https://github.com/manaswini-kunala/pocketllm-portal.git**  
+   **cd pocketllm-portal**
+
 ---
 
-# 🛠 SETUP & INSTALLATION 
+## 2️⃣ Backend Setup (server)
+
+1. Navigate to the backend folder:
+
+   **cd server**  
+   **npm install**
+
+---
+
+### ✅ 1) Create `.env` file
+
+Create a file named `.env` inside the `server` folder:
+DATABASE_URL=“file:./dev.db”
+JWT_SECRET=“your-secret-key”
+
+> `JWT_SECRET` can be **any random string** — used for signing login tokens.
+
+---
+
+### ✅ 2) Run Prisma migrations (creates all tables)
+
+Run:
+
+**npx prisma migrate dev --name init**
+
+---
+
+### ✅ 3) Seed default users
+
+Run:
+
+**node prisma/seed.js**
+
+This will create:
+
+#### Admin User  
+- Email: **admin@pocketllm.com**  
+- Password: **admin123**
+
+#### Regular User  
+- Email: **user@pocketllm.com**  
+- Password: **user123**
+
+---
+
+### ✅ 4) Start backend server
+
+Run:
+
+**npm start**
+
+Backend runs at → http://localhost:3000
+
+---
+
+## 3️⃣ Frontend Setup (client)
+
+1. Open another terminal  
+2. Navigate to client folder:
+
+   **cd client**
+
+3. Install dependencies:
+
+   **npm install**
+
+4. Start the frontend:
+
+   **npm run dev**
+
+Frontend runs at → http://localhost:5173
+
+---
+
+## 🤖 LLM Model (Auto-Download)
+
+On the **first chat request**, the backend automatically downloads:
+
+**Xenova/Qwen1.5-0.5B-Chat**
+
+- ✔ No Hugging Face API key needed  
+- ✔ No GPU required  
+- ✔ Fully CPU-only  
+- ✔ Model cached locally after first run  
 
 
-
-```bash
-1️⃣ Clone the Repository
-   git clone https://github.com/manaswini-kunala/pocketllm-portal.git
-   cd pocketllm-portal
-
-2️⃣ Backend Setup (server)
-   cd server
-   npm install
-
-## 1) Create .env:
-   DATABASE_URL="file:./dev.db"
-   JWT_SECRET="your-secret-key"
-   JWT_SECRET can be any random string — it is used to sign login tokens.
-
-# 2) Run migrations (creates all tables):
-    npx prisma migrate dev --name init
-
-# 3) Seed default users
-    node prisma/seed.js
-
-    This creates:
-    Admin:
-    Email: admin@pocketllm.com
-    Password: admin123
-    
-    Regular User:
-    Email: user@pocketllm.com
-    Password: user123
-
-# 4) Start backend:
-     npm start
-
-3️⃣ Frontend Setup (client)
-
- # Open another terminal:
-   cd client
-   npm install
-   npm run dev
-
-🤖 LLM Model (Auto-Download)
-
-#  On the first chat request, the backend automatically downloads:
-   Xenova/Qwen1.5-0.5B-Chat
-   •	No Hugging Face API key needed
-  	•	No GPU needed
-  	•	Fully CPU-only
 
     
 
