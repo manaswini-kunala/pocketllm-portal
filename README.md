@@ -135,7 +135,7 @@ Backend runs at → http://localhost:3001
 
    **npm run dev**
 
-Frontend runs at → http://localhost:5173
+Frontend runs at → http://localhost:5177
 
 ---
 
