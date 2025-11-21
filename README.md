@@ -61,18 +61,17 @@ It includes:
 pocketllm-portal/
 │
 ├── client/                     # React frontend
-│   ├── src/
-│   ├── public/
+│   ├── src/                    # React components, pages, hooks
+│   ├── public/                 # Static assets
 │   └── package.json
 │
 ├── server/                     # Backend (Express + Prisma)
 │   ├── src/                    # Routes, controllers, LLM engine
-│   ├── prisma/                 # Schema, migrations, seed.js
-│   ├── .env                    # Environment variables
+│   ├── prisma/                 # Prisma schema, migrations, seed.js
+│   ├── .env                    # Environment variables (not committed)
 │   └── package.json
 │
-└── .gitignore
-
+└── .gitignore                  # Git ignore rules
 
 # 🛠 SETUP & INSTALLATION
 
@@ -96,9 +95,7 @@ pocketllm-portal/
 
 ### ✅ 1) Create `.env` file
 
-Create a file named `.env` inside the `server` folder:
-DATABASE_URL=“file:./dev.db”
-JWT_SECRET=“your-secret-key”
+Create a file named `.env` inside the `server` folder with the following content:
 
 > `JWT_SECRET` can be **any random string** — used for signing login tokens.
 
@@ -136,7 +133,7 @@ Run:
 
 **npm start**
 
-Backend runs at → http://localhost:3000
+Backend runs at → http://localhost:3001
 
 ---
 
