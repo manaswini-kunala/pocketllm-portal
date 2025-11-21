@@ -1,158 +1,321 @@
-# 🚀 PocketLLM Portal
+# PocketLLM Portal
 
-PocketLLM Portal is a lightweight **local-first LLM chat application** that runs fully on **CPU** using  
-**Transformers.js (Xenova)** and a **Hugging Face lightweight model (Qwen1.5-0.5B-Chat)**.  
+A full-stack chat application with local LLM inference, built with React and Node.js.
 
-It includes:
-- Multi-turn chat  
-- Personas  
-- Session history  
-- Authentication  
-- Admin dashboard  
-- Local SQLite database  
-- CPU-only inference  
+## Features
 
----
-
-# ✨ Features
-
-## 🧠 Chat Interface
-- Clean UI with collapsible **conversation history sidebar**
-- Multi-turn memory (configurable)
-- Personas: **Default**, **Friendly**, **Formal**, **Technical**
-- CPU-only inference via `@xenova/transformers`
-- Auto-downloads model from Hugging Face Hub
-
-## 🔐 Authentication
-- JWT-based login
-- Default admin + user accounts
-- Role-based access (admin dashboard)
-
-## 🛠 Admin Dashboard
-- CPU usage
-- RAM usage
-- LLM latency
-- Cache hit ratio
-- Update LLM config (context, response length, model)
-- Clear cache
-
-## 💾 SQLite Persistence
-- Users  
-- Sessions  
-- Messages  
-- SystemConfig  
+- 💬 Chat with a local AI model (runs on CPU)
+- 🔐 User authentication (JWT-based)
+- 📝 Session management (save and continue conversations)
+- 🎨 Multiple AI personas (Friendly, Professional, Technical)
+- ⚡ Response caching for faster replies
+- 👤 Admin dashboard for monitoring metrics
+- 🗄️ SQLite database for persistence
 
 ---
 
-# 📦 Tech Stack
+## Tech Stack
 
-| Layer | Technology |
-|-------|-------------|
-| Frontend | React, TypeScript, Vite, TailwindCSS |
-| Backend | Node.js, Express |
-| Database | SQLite (Prisma ORM) |
-| LLM Runtime | Hugging Face model (`Qwen1.5-0.5B-Chat`) via Xenova Transformers.js |
+**Frontend:**
+- React (TypeScript)
+- Vite
+- Tailwind CSS
 
----
-
-
-# 🛠 SETUP & INSTALLATION
-
-## 1️⃣ Clone the Repository
-
-1. Run the following:
-
-   **git clone https://github.com/manaswini-kunala/pocketllm-portal.git**  
-   **cd pocketllm-portal**
+**Backend:**
+- Node.js (JavaScript)
+- Express.js
+- Prisma ORM
+- SQLite
+- Transformers.js (local AI)
 
 ---
 
-## 2️⃣ Backend Setup (server)
+## Prerequisites
 
-1. Navigate to the backend folder:
-
-   **cd server**  
-   **npm install**
-
----
-
-### ✅ 1) Create `.env` file
-
-Create a file named `.env` inside the `server` folder with the following content:
-
-> `JWT_SECRET` can be **any random string** — used for signing login tokens.
+- **Node.js** v18+ ([Download](https://nodejs.org/))
+- **npm** or **yarn**
+- **Git**
 
 ---
 
-### ✅ 2) Run Prisma migrations (creates all tables)
+## Setup Instructions
 
-Run:
+### 1. Clone the Repository
 
-**npx prisma migrate dev --name init**
+```bash
+git clone <your-repo-url>
+cd <repo-name>
+```
+
+### 2. Install Dependencies
+
+**Server:**
+```bash
+cd server
+npm install
+```
+
+**Client:**
+```bash
+cd ../client
+npm install
+```
+
+### 3. Environment Setup
+
+Create a `.env` file in the `server/` directory:
+
+```bash
+cd server
+touch .env
+```
+
+Add the following to `.env`:
+
+```env
+DATABASE_URL="file:./prisma/dev.db"
+JWT_SECRET="supersecretkey_change_me_in_prod"
+PORT=3001
+```
+
+### 4. Database Setup
+
+Initialize the database and run migrations:
+
+```bash
+cd server
+npx prisma migrate dev
+```
+
+### 5. Seed Database (Optional)
+
+Seed the database with default users:
+
+```bash
+node seed.js
+```
+
+This creates two test accounts:
+- **Admin**: `admin@pocketllm.com` / `admin123`
+- **User**: `user@pocketllm.com` / `user123`
 
 ---
 
-### ✅ 3) Seed default users
+## Running the Project
 
-Run:
+### Start Backend Server
 
-**node prisma/seed.js**
+```bash
+cd server
+npm run dev
+```
 
-This will create:
+Server runs on: `http://localhost:3001`
 
-#### Admin User  
-- Email: **admin@pocketllm.com**  
-- Password: **admin123**
+### Start Frontend Client
 
-#### Regular User  
-- Email: **user@pocketllm.com**  
-- Password: **user123**
+```bash
+cd client
+npm run dev
+```
 
----
-
-### ✅ 4) Start backend server
-
-Run:
-
-**npm start**
-
-Backend runs at → http://localhost:3001
+Client runs on: `http://localhost:5173`
 
 ---
 
-## 3️⃣ Frontend Setup (client)
+## Usage
 
-1. Open another terminal  
-2. Navigate to client folder:
+### 1. Access the App
 
-   **cd client**
+Open your browser and go to: `http://localhost:5173`
 
-3. Install dependencies:
+### 2. Login
 
-   **npm install**
+Use one of the seeded accounts or register a new one:
+- **Admin**: `admin@pocketllm.com` / `admin123`
+- **User**: `user@pocketllm.com` / `user123`
 
-4. Start the frontend:
+### 3. Start Chatting
 
-   **npm run dev**
+- Type your message and select a persona (Friendly, Professional, etc.)
+- The AI model downloads on first use (~200MB) and then runs locally
+- Responses are cached for faster repeated queries
 
-Frontend runs at → http://localhost:5173
+### 4. Admin Dashboard (Admin Only)
+
+Navigate to `/admin` to view:
+- CPU and memory usage
+- Cache statistics
+- Request metrics
+- Response times
+- Current AI model
 
 ---
 
-## 🤖 LLM Model (Auto-Download)
+## Project Structure
 
-On the **first chat request**, the backend automatically downloads:
+```
+.
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── pages/         # Login, Chat, Admin
+│   │   └── components/    # Reusable UI components
+│   └── package.json
+│
+├── server/                # Node.js backend
+│   ├── src/
+│   │   ├── routes/       # API routes (auth, chat, admin)
+│   │   ├── services/     # Business logic (LLM, cache, metrics)
+│   │   └── middleware/   # Authentication
+│   ├── prisma/           # Database schema & migrations
+│   ├── index.js          # Main server entry
+│   ├── seed.js           # Database seeding script
+│   └── package.json
+│
+├── .gitignore
+└── README.md
+```
 
-**Xenova/Qwen1.5-0.5B-Chat**
+---
 
-- ✔ No Hugging Face API key needed  
-- ✔ No GPU required  
-- ✔ Fully CPU-only  
-- ✔ Model cached locally after first run  
+## Available Scripts
 
+### Server
 
+```bash
+npm run dev        # Start development server with nodemon
+```
 
-    
+### Client
 
+```bash
+npm run dev        # Start Vite dev server
+npm run build      # Build for production
+npm run preview    # Preview production build
+```
 
+---
 
+## Database Management
+
+### View Database (Prisma Studio)
+
+```bash
+cd server
+npx prisma studio
+```
+
+Opens a visual database browser at `http://localhost:5555`
+
+### Create a New Admin User
+
+```bash
+cd server
+node make-admin.js <user-email>
+```
+
+### Reset Database
+
+```bash
+cd server
+rm prisma/dev.db
+npx prisma migrate dev
+node seed.js
+```
+
+---
+
+## How It Works
+
+### Architecture
+
+```
+User (Browser)
+     ↓
+React Frontend (Vite)
+     ↓ HTTP/REST
+Node.js Backend (Express)
+     ↓
+Prisma ORM
+     ↓
+SQLite Database (dev.db)
+```
+
+### AI Model
+
+- **Model**: `Xenova/Qwen1.5-0.5B-Chat`
+- **Runs**: Locally on CPU (no API keys needed)
+- **First Request**: Downloads model (~200MB) and caches it
+- **Subsequent Requests**: Uses cached model files
+
+### Caching
+
+- **Type**: LRU (Least Recently Used) in-memory cache
+- **Capacity**: 500 responses
+- **TTL**: 1 hour
+- **Key**: `model:persona:prompt`
+- Same question → Instant response from cache
+
+---
+
+## Default Credentials
+
+After running `node seed.js`:
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@pocketllm.com | admin123 | admin |
+| user@pocketllm.com | user123 | user |
+
+---
+
+## Troubleshooting
+
+### Port Already in Use
+
+If port 3001 or 5173 is in use:
+
+```bash
+# Kill process on port 3001
+lsof -ti:3001 | xargs kill -9
+
+# Kill process on port 5173
+lsof -ti:5173 | xargs kill -9
+```
+
+### Database Issues
+
+```bash
+cd server
+rm prisma/dev.db
+npx prisma migrate dev
+node seed.js
+```
+
+### Model Download Fails
+
+- Check internet connection
+- Model auto-downloads on first chat request
+- Files cached in `~/.cache/huggingface/`
+
+### Cache Not Working
+
+- Cache is in-memory only (lost on server restart)
+- Exact same prompt + persona + model required for cache hit
+- Check server console for "Cache Hit!" or "Cache Miss" logs
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## Support
+
+For issues or questions, please open an issue on GitHub.
