@@ -78,9 +78,10 @@ pocketllm-portal/
 
 # 🛠 SETUP & INSTALLATION 
 
-1️⃣ Clone the Repository
+
 
 ```bash
+1️⃣ Clone the Repository
 git clone https://github.com/manaswini-kunala/pocketllm-portal.git
 cd pocketllm-portal
 
