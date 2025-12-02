@@ -4,7 +4,7 @@ const path = require('path');
 // Configuration
 let currentModel = 'Xenova/Qwen1.5-0.5B-Chat'; // Better reasoning, still fast
 let maxContextMessages = 10;
-let maxResponseLength = 512;
+let maxResponseLength = 100; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
 
 // Pipeline instance
 let generator = null;
