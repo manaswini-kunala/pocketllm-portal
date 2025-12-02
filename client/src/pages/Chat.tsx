@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { Send, Plus, Trash2, Menu, Settings, LogOut, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
+import { streamChat } from '../api/client';
 
 interface Message {
     id: string;
@@ -71,34 +72,91 @@ const Chat: React.FC = () => {
 
         const userMsg: Message = { id: 'temp-' + Date.now(), role: 'user', content: input };
         setMessages(prev => [...prev, userMsg]);
+
+        // Add placeholder for assistant response
+        const assistantPlaceholder: Message = {
+            id: 'streaming-' + Date.now(),
+            role: 'assistant',
+            content: ''
+        };
+        setMessages(prev => [...prev, assistantPlaceholder]);
+
         setInput('');
         setLoading(true);
 
         try {
-            const res = await api.post('/chat', {
-                prompt: userMsg.content,
-                sessionId: currentSessionId,
-                persona
-            });
+            await streamChat(
+                userMsg.content,
+                currentSessionId,
+                persona,
+                // onChunk: Update the last message with new chunk
+                (chunk) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        const lastMsgIndex = updated.length - 1;
+                        const lastMsg = updated[lastMsgIndex];
 
-            if (!currentSessionId) {
-                setCurrentSessionId(res.data.sessionId);
-                fetchSessions(); // Refresh list to show new session
-            }
+                        // Ensure we are updating the assistant message
+                        if (lastMsg.role === 'assistant') {
+                            updated[lastMsgIndex] = {
+                                ...lastMsg,
+                                content: lastMsg.content + chunk
+                            };
+                        }
+                        return updated;
+                    });
+                },
+                // onSessionId: Set session ID if new session
+                (sessionId) => {
+                    setCurrentSessionId(sessionId);
+                    fetchSessions();
+                },
+                // onComplete: Update message ID
+                (messageId) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        const lastMsgIndex = updated.length - 1;
+                        const lastMsg = updated[lastMsgIndex];
 
-            setMessages(prev => {
-                // Replace temp message if we wanted to be strict, but appending assistant is fine
-                // Actually, let's just append the assistant message.
-                // Ideally we'd replace the temp ID with real ID but for UI it doesn't matter much here.
-                return [...prev, res.data.message];
-            });
+                        if (lastMsg.role === 'assistant') {
+                            updated[lastMsgIndex] = {
+                                ...lastMsg,
+                                id: messageId
+                            };
+                        }
+                        return updated;
+                    });
+                    setLoading(false);
+                },
+                // onError: Show error
+                (error) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = {
+                            id: 'err',
+                            role: 'assistant',
+                            content: `Error: ${error}`
+                        };
+                        return updated;
+                    });
+                    setLoading(false);
+                }
+            );
         } catch (err) {
             console.error(err);
-            setMessages(prev => [...prev, { id: 'err', role: 'assistant', content: 'Error: Could not get response.' }]);
-        } finally {
+            setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                    id: 'err',
+                    role: 'assistant',
+                    content: 'Error: Could not get response.'
+                };
+                return updated;
+            });
             setLoading(false);
         }
     };
+
 
     const createNewChat = () => {
         setCurrentSessionId(null);

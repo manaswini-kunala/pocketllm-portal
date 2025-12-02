@@ -4,7 +4,7 @@ const path = require('path');
 // Configuration
 let currentModel = 'Xenova/Qwen1.5-0.5B-Chat'; // Better reasoning, still fast
 let maxContextMessages = 10;
-let maxResponseLength = 100; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
+let maxResponseLength = 500; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
 
 // Pipeline instance
 let generator = null;
@@ -66,10 +66,62 @@ const generateResponse = async (prompt, context, persona) => {
     return responseText.trim();
 };
 
+// Stream response progressively (simulated streaming since Transformers.js doesn't support token streaming)
+const generateResponseStream = async (prompt, context, persona, onChunk) => {
+    await initializeModel();
+
+    let systemPrompt = "You are a helpful AI assistant.";
+    if (persona === 'Formal') systemPrompt = "You are a formal and professional AI assistant.";
+    if (persona === 'Friendly') systemPrompt = "You are a friendly and casual AI assistant.";
+    if (persona === 'Technical') systemPrompt = "You are a technical expert.";
+
+    // Construct messages array for chat template
+    const messages = [
+        { role: 'system', content: systemPrompt },
+        ...context.map(msg => ({ role: msg.role, content: msg.content })),
+        { role: 'user', content: prompt }
+    ];
+
+    let fullInput = "";
+    messages.forEach(msg => {
+        fullInput += `<|im_start|>${msg.role}\n${msg.content}<|im_end|>\n`;
+    });
+    fullInput += "<|im_start|>assistant\n";
+
+    console.log('Generating response (streaming)...');
+
+    // Initialize lastDecodedText with the prompt to avoid sending it
+    const inputTokenIds = generator.tokenizer(fullInput).input_ids;
+    let lastDecodedText = generator.tokenizer.decode(inputTokenIds, { skip_special_tokens: true });
+
+    const output = await generator(fullInput, {
+        max_new_tokens: maxResponseLength,
+        temperature: 0.7,
+        do_sample: true,
+        top_k: 50,
+        return_full_text: false,
+        callback_function: (beams) => {
+            const decodedText = generator.tokenizer.decode(beams[0].output_token_ids, {
+                skip_special_tokens: true,
+            });
+
+            if (decodedText.length > lastDecodedText.length) {
+                const newPart = decodedText.slice(lastDecodedText.length);
+                onChunk(newPart);
+                lastDecodedText = decodedText;
+            }
+        }
+    });
+
+    let responseText = output[0].generated_text.trim();
+    return responseText;
+};
+
 module.exports = {
     currentModel,
     maxContextMessages,
     maxResponseLength,
     updateLLMConfig,
-    generateResponse
+    generateResponse,
+    generateResponseStream
 };
