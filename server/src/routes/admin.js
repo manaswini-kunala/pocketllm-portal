@@ -2,11 +2,11 @@ const express = require('express');
 const os = require('os');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { getCacheStats, clearCache, updateCacheConfig } = require('../services/cache');
-const { currentModel, maxContextMessages, maxResponseLength, updateLLMConfig } = require('../services/llm');
+const llm = require('../services/llm');
+const { updateLLMConfig } = llm;
 const { getMetrics, resetMetrics } = require('../services/metrics');
 
 const router = express.Router();
-const llm = require('../services/llm');
 router.use(authenticateToken);
 router.use(requireAdmin);
 
@@ -33,13 +33,9 @@ router.get('/metrics', (req, res) => {
         memoryTotalMB: Math.round(totalMem / 1024 / 1024),
         cacheStats,
         appMetrics,
-        currentModel,
-        maxContextMessages,
-        maxResponseLength,
         currentModel: llm.getCurrentModel(),
         maxContextMessages: llm.getMaxContextMessages(),
         maxResponseLength: llm.getMaxResponseLength(),
-        // cacheStats: cache.stats()
     });
 });
 

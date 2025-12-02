@@ -4,7 +4,7 @@ const path = require('path');
 // Configuration
 let currentModel = 'Xenova/Qwen1.5-0.5B-Chat'; // Better reasoning, still fast
 let maxContextMessages = 10;
-let maxResponseLength = 500; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
+let maxResponseLength = 512; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
 
 // Pipeline instance
 let generator = null;
@@ -23,10 +23,10 @@ const updateLLMConfig = (model, contextLen, responseLen) => {
     if (model && model !== currentModel) {
         currentModel = model;
         generator = null; // Force reload
+        console.log(`Model changed to ${model}. Will reload on next generate.`);
     }
     if (contextLen) maxContextMessages = contextLen;
     if (responseLen) maxResponseLength = responseLen;
-    console.log(`Model changed to ${model}. Will reload on next generate.`);
 };
 
 const generateResponse = async (prompt, context, persona) => {

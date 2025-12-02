@@ -1,7 +1,8 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticateToken } = require('../middleware/auth');
-const { generateResponse, generateResponseStream, currentModel, maxContextMessages } = require('../services/llm');
+const llmService = require('../services/llm');
+const { generateResponse, generateResponseStream } = llmService;
 const { responseCache } = require('../services/cache');
 
 const router = express.Router();
@@ -70,7 +71,7 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
     // 3. Check Cache
-    const cacheKey = `${currentModel}:${persona}:${prompt}`;
+    const cacheKey = `${llmService.getCurrentModel()}:${persona}:${prompt}`;
     if (responseCache.has(cacheKey)) {
         console.log('Cache Hit!');
         trackCacheHit();
@@ -105,7 +106,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const recentMessages = await prisma.message.findMany({
         where: { sessionId: currentSessionId },
         orderBy: { createdAt: 'desc' },
-        take: maxContextMessages,
+        take: llmService.getMaxContextMessages(),
     });
     // Reverse to chronological order for LLM
     const context = recentMessages.reverse().map(m => ({ role: m.role, content: m.content }));
@@ -164,6 +165,13 @@ router.post('/stream', authenticateToken, async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
+    // Handle client disconnect
+    let isClientConnected = true;
+    req.on('close', () => {
+        isClientConnected = false;
+        console.log('Client disconnected from stream');
+    });
+
     // Track request
     const { trackRequest, trackCacheHit, trackCacheMiss, trackResponseTime } = require('../services/metrics');
     trackRequest();
@@ -202,7 +210,7 @@ router.post('/stream', authenticateToken, async (req, res) => {
         });
 
         // 3. Check Cache
-        const cacheKey = `${currentModel}:${persona}:${prompt}`;
+        const cacheKey = `${llmService.getCurrentModel()}:${persona}:${prompt}`;
         if (responseCache.has(cacheKey)) {
             console.log('Cache Hit! (streaming with cached response)');
             trackCacheHit();
@@ -241,7 +249,7 @@ router.post('/stream', authenticateToken, async (req, res) => {
         const recentMessages = await prisma.message.findMany({
             where: { sessionId: currentSessionId },
             orderBy: { createdAt: 'desc' },
-            take: maxContextMessages,
+            take: llmService.getMaxContextMessages(),
         });
         const context = recentMessages.reverse().map(m => ({ role: m.role, content: m.content }));
         const contextForLLM = context.filter(m => m.content !== prompt);
