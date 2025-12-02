@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { Activity, Server, Database, Save, Trash2, ArrowLeft } from 'lucide-react';
@@ -7,6 +7,20 @@ import clsx from 'clsx';
 const Admin: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'model' | 'cache'>('overview');
     const [metrics, setMetrics] = useState<any>(null);
+    const loadedOnceRef = useRef(false);
+
+
+    const AVAILABLE_MODELS = [
+        { id: "Xenova/Qwen1.5-0.5B-Chat",     label: "Qwen 1.5 - 0.5B Chat (fast)" },
+        { id: "Xenova/Qwen1.5-1.8B-Chat",     label: "Qwen 1.5 - 1.8B Chat (better reasoning)" },
+        // { id: "Xenova/Phi-3-mini-4k-instruct",label: "Phi-3 Mini 4k Instruct" },
+        { id: "Xenova/TinyLlama-1.1B-Chat-v1.0", label: "TinyLlama 1.1B Chat" },
+        // { id: "Xenova/distilgpt2",            label: "distilGPT2 (tiny baseline)" },
+        // { id: "Xenova/gpt2",                  label: "GPT-2 (classic baseline)" }
+        // { id: "Xenova/opt-350m",            label: "OPT-350M (Stable)" },
+        // { id: "Xenova/opt-1.3b",            label: "OPT-1.3B (Medium)" }
+      ];
+      
     const [config, setConfig] = useState({
         model: '',
         contextLength: 10,
@@ -29,7 +43,7 @@ const Admin: React.FC = () => {
             // Only set config once to avoid overwriting user edits if we were to sync fully, 
             // but here we just sync initial values if needed or keep them separate.
             // For simplicity, let's just load them into the form if it's the first load
-            if (!config.model && res.data.currentModel) {
+            if (!loadedOnceRef.current) {
                 setConfig({
                     model: res.data.currentModel,
                     contextLength: res.data.maxContextMessages,
@@ -37,7 +51,11 @@ const Admin: React.FC = () => {
                     cacheMax: res.data.cacheStats.max,
                     cacheTTL: res.data.cacheStats.ttl
                 });
+            
+                loadedOnceRef.current = true;
             }
+            
+            
         } catch (err) {
             console.error('Failed to fetch metrics', err);
             // If unauthorized, redirect
@@ -48,13 +66,14 @@ const Admin: React.FC = () => {
     const handleSaveConfig = async () => {
         try {
             await api.post('/admin/config', config);
+            await fetchMetrics(); // force refresh
             alert('Configuration saved!');
-            fetchMetrics();
         } catch (err) {
             console.error(err);
             alert('Failed to save config');
         }
     };
+    
 
     const handleClearCache = async () => {
         if (!confirm('Are you sure you want to clear the cache?')) return;
@@ -174,16 +193,29 @@ const Admin: React.FC = () => {
                     <div className="max-w-2xl space-y-6">
                         <h2 className="text-2xl font-bold text-gray-800">Model Configuration</h2>
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Hugging Face Model ID</label>
-                                <input
-                                    type="text"
-                                    value={config.model}
-                                    onChange={e => setConfig({ ...config, model: e.target.value })}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">e.g., microsoft/Phi-3-mini-4k-instruct</p>
-                            </div>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hugging Face Model
+                    </label>
+
+                    <select
+                    value={config.model}
+                    onChange={e => setConfig({ ...config, model: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                    {AVAILABLE_MODELS.map(m => (
+                        <option key={m.id} value={m.id}>
+                        {m.label}
+                        </option>
+                    ))}
+                    </select>
+
+                    <p className="text-xs text-gray-500 mt-1">
+                    Select a model to load into Pocket LLM (only supported Xenova models shown)
+                    </p>
+                </div>
+                </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
