@@ -6,7 +6,7 @@ const { currentModel, maxContextMessages, maxResponseLength, updateLLMConfig } =
 const { getMetrics, resetMetrics } = require('../services/metrics');
 
 const router = express.Router();
-
+const llm = require('../services/llm');
 router.use(authenticateToken);
 router.use(requireAdmin);
 
@@ -35,7 +35,11 @@ router.get('/metrics', (req, res) => {
         appMetrics,
         currentModel,
         maxContextMessages,
-        maxResponseLength
+        maxResponseLength,
+        currentModel: llm.getCurrentModel(),
+        maxContextMessages: llm.getMaxContextMessages(),
+        maxResponseLength: llm.getMaxResponseLength(),
+        // cacheStats: cache.stats()
     });
 });
 

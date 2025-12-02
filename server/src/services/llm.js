@@ -26,6 +26,7 @@ const updateLLMConfig = (model, contextLen, responseLen) => {
     }
     if (contextLen) maxContextMessages = contextLen;
     if (responseLen) maxResponseLength = responseLen;
+    console.log(`Model changed to ${model}. Will reload on next generate.`);
 };
 
 const generateResponse = async (prompt, context, persona) => {
@@ -67,9 +68,10 @@ const generateResponse = async (prompt, context, persona) => {
 };
 
 module.exports = {
-    currentModel,
-    maxContextMessages,
-    maxResponseLength,
+    getCurrentModel: () => currentModel,
+    getMaxContextMessages: () => maxContextMessages,
+    getMaxResponseLength: () => maxResponseLength,
     updateLLMConfig,
     generateResponse
 };
+
