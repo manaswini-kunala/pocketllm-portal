@@ -67,7 +67,7 @@ const generateResponse = async (prompt, context, persona) => {
     return responseText.trim();
 };
 
-// Stream response progressively (simulated streaming since Transformers.js doesn't support token streaming)
+// Stream response progressively (with fallback for models that don't support real streaming)
 const generateResponseStream = async (prompt, context, persona, onChunk) => {
     await initializeModel();
 
@@ -91,31 +91,54 @@ const generateResponseStream = async (prompt, context, persona, onChunk) => {
 
     console.log('Generating response (streaming)...');
 
-    // Initialize lastDecodedText with the prompt to avoid sending it
-    const inputTokenIds = generator.tokenizer(fullInput).input_ids;
-    let lastDecodedText = generator.tokenizer.decode(inputTokenIds, { skip_special_tokens: true });
+    // Track if callback is actually being called (some models don't support it)
+    let callbackCalled = false;
+    let lastDecodedText = "";
 
-    const output = await generator(fullInput, {
-        max_new_tokens: maxResponseLength,
-        temperature: 0.7,
-        do_sample: true,
-        top_k: 50,
-        return_full_text: false,
-        callback_function: (beams) => {
-            const decodedText = generator.tokenizer.decode(beams[0].output_token_ids, {
-                skip_special_tokens: true,
-            });
+    try {
+        // Try real streaming first
+        const inputTokenIds = generator.tokenizer(fullInput).input_ids;
+        lastDecodedText = generator.tokenizer.decode(inputTokenIds, { skip_special_tokens: true });
 
-            if (decodedText.length > lastDecodedText.length) {
-                const newPart = decodedText.slice(lastDecodedText.length);
-                onChunk(newPart);
-                lastDecodedText = decodedText;
+        const output = await generator(fullInput, {
+            max_new_tokens: maxResponseLength,
+            temperature: 0.7,
+            do_sample: true,
+            top_k: 50,
+            return_full_text: false,
+            callback_function: (beams) => {
+                callbackCalled = true;
+                const decodedText = generator.tokenizer.decode(beams[0].output_token_ids, {
+                    skip_special_tokens: true,
+                });
+
+                if (decodedText.length > lastDecodedText.length) {
+                    const newPart = decodedText.slice(lastDecodedText.length);
+                    onChunk(newPart);
+                    lastDecodedText = decodedText;
+                }
+            }
+        });
+
+        let responseText = output[0].generated_text.trim();
+
+        // Fallback: If callback was never called, simulate streaming word-by-word
+        if (!callbackCalled) {
+            console.log('⚠️  Real streaming not supported for this model, using fallback...');
+            const words = responseText.split(' ');
+            for (let i = 0; i < words.length; i++) {
+                const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
+                onChunk(chunk);
+                // Small delay to simulate streaming
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
-    });
 
-    let responseText = output[0].generated_text.trim();
-    return responseText;
+        return responseText;
+    } catch (error) {
+        console.error('Streaming error:', error);
+        throw error;
+    }
 };
 
 module.exports = {
