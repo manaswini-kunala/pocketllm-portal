@@ -2,11 +2,11 @@ const express = require('express');
 const os = require('os');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { getCacheStats, clearCache, updateCacheConfig } = require('../services/cache');
-const { currentModel, maxContextMessages, maxResponseLength, updateLLMConfig } = require('../services/llm');
+const llm = require('../services/llm');
+const { updateLLMConfig } = llm;
 const { getMetrics, resetMetrics } = require('../services/metrics');
 
 const router = express.Router();
-
 router.use(authenticateToken);
 router.use(requireAdmin);
 
@@ -33,17 +33,21 @@ router.get('/metrics', (req, res) => {
         memoryTotalMB: Math.round(totalMem / 1024 / 1024),
         cacheStats,
         appMetrics,
-        currentModel,
-        maxContextMessages,
-        maxResponseLength
+        currentModel: llm.getCurrentModel(),
+        maxContextMessages: llm.getMaxContextMessages(),
+        maxResponseLength: llm.getMaxResponseLength(),
     });
 });
 
-router.post('/config', (req, res) => {
+router.post('/config', async (req, res) => {
     const { model, contextLength, responseLength, cacheMax, cacheTTL } = req.body;
 
     if (model || contextLength || responseLength) {
-        updateLLMConfig(model, Number(contextLength), Number(responseLength));
+        try {
+            await updateLLMConfig(model, Number(contextLength), Number(responseLength));
+        } catch (error) {
+            return res.status(500).json({ success: false, message: 'Failed to load model: ' + error.message });
+        }
     }
 
     if (cacheMax || cacheTTL) {
