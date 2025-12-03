@@ -258,6 +258,9 @@ router.post('/stream', authenticateToken, async (req, res) => {
         const startTime = Date.now();
         let fullResponse = '';
 
+        // Send a keep-alive comment to prevent timeout during model loading
+        res.write(': status: loading_model\n\n');
+
         const responseText = await generateResponseStream(prompt, contextForLLM, persona, (chunk) => {
             fullResponse += chunk;
             res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
