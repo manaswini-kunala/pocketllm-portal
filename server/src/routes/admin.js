@@ -39,11 +39,15 @@ router.get('/metrics', (req, res) => {
     });
 });
 
-router.post('/config', (req, res) => {
+router.post('/config', async (req, res) => {
     const { model, contextLength, responseLength, cacheMax, cacheTTL } = req.body;
 
     if (model || contextLength || responseLength) {
-        updateLLMConfig(model, Number(contextLength), Number(responseLength));
+        try {
+            await updateLLMConfig(model, Number(contextLength), Number(responseLength));
+        } catch (error) {
+            return res.status(500).json({ success: false, message: 'Failed to load model: ' + error.message });
+        }
     }
 
     if (cacheMax || cacheTTL) {

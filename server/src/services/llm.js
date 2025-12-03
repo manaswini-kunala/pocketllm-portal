@@ -19,11 +19,28 @@ const initializeModel = async () => {
     }
 };
 
-const updateLLMConfig = (model, contextLen, responseLen) => {
+const updateLLMConfig = async (model, contextLen, responseLen) => {
     if (model && model !== currentModel) {
         currentModel = model;
         generator = null; // Force reload
-        console.log(`Model changed to ${model}. Will reload on next generate.`);
+        console.log(`Model changed to ${model}. Loading now...`);
+
+        try {
+            await initializeModel();
+            console.log(`Model ${model} loaded successfully.`);
+
+            // CRITICAL: Warmup generation to prevent empty first response
+            console.log('Performing warmup generation...');
+            await generator("Hello", {
+                max_new_tokens: 5,
+                do_sample: false,
+                return_full_text: false
+            });
+            console.log('Warmup complete. Model is ready.');
+        } catch (error) {
+            console.error(`Failed to load model ${model}:`, error);
+            throw error;
+        }
     }
     if (contextLen) maxContextMessages = contextLen;
     if (responseLen) maxResponseLength = responseLen;
@@ -122,15 +139,40 @@ const generateResponseStream = async (prompt, context, persona, onChunk) => {
 
         let responseText = output[0].generated_text.trim();
 
-        // Fallback: If callback was never called, simulate streaming word-by-word
-        if (!callbackCalled) {
-            console.log('⚠️  Real streaming not supported for this model, using fallback...');
+        // Handle empty response (common on first generation after load)
+        if (!responseText) {
+            console.log('⚠️  Empty response on first try, retrying...');
+            const retryOutput = await generator(fullInput, {
+                max_new_tokens: maxResponseLength,
+                temperature: 0.7,
+                do_sample: true,
+                top_k: 50,
+                return_full_text: false
+            });
+            responseText = retryOutput[0].generated_text.trim();
+
+            if (!responseText) {
+                throw new Error('Model returned empty response after retry');
+            }
+
+            // Stream the retry response word-by-word
             const words = responseText.split(' ');
             for (let i = 0; i < words.length; i++) {
                 const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
                 onChunk(chunk);
-                // Small delay to simulate streaming
                 await new Promise(resolve => setTimeout(resolve, 50));
+            }
+        } else {
+            // Fallback: If callback was never called, simulate streaming word-by-word
+            if (!callbackCalled) {
+                console.log('⚠️  Real streaming not supported for this model, using fallback...');
+                const words = responseText.split(' ');
+                for (let i = 0; i < words.length; i++) {
+                    const chunk = words[i] + (i < words.length - 1 ? ' ' : '');
+                    onChunk(chunk);
+                    // Small delay to simulate streaming
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
             }
         }
 

@@ -258,43 +258,58 @@ router.post('/stream', authenticateToken, async (req, res) => {
         const startTime = Date.now();
         let fullResponse = '';
 
-        // Send a keep-alive comment to prevent timeout during model loading
-        res.write(': status: loading_model\n\n');
+        // Send periodic keep-alive to prevent timeout during model loading
+        const keepAliveInterval = setInterval(() => {
+            try {
+                res.write(': ping\n\n');
+            } catch (e) {
+                clearInterval(keepAliveInterval);
+            }
+        }, 2000); // Every 2 seconds
 
-        const responseText = await generateResponseStream(prompt, contextForLLM, persona, (chunk) => {
-            fullResponse += chunk;
-            res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-        });
+        try {
+            const responseText = await generateResponseStream(prompt, contextForLLM, persona, (chunk) => {
+                fullResponse += chunk;
+                res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+            });
 
-        const endTime = Date.now();
-        const responseTime = endTime - startTime;
-        trackResponseTime(responseTime);
-        console.log(`Response streamed in ${responseTime}ms`);
+            clearInterval(keepAliveInterval);
 
-        // 6. Save Assistant Message
-        const assistantMsg = await prisma.message.create({
-            data: {
-                content: responseText,
-                role: 'assistant',
-                sessionId: currentSessionId,
-            },
-        });
+            const endTime = Date.now();
+            const responseTime = endTime - startTime;
+            trackResponseTime(responseTime);
+            console.log(`Response streamed in ${responseTime}ms`);
 
-        // 7. Update Cache
-        responseCache.set(cacheKey, responseText);
+            // 6. Save Assistant Message
+            const assistantMsg = await prisma.message.create({
+                data: {
+                    content: responseText,
+                    role: 'assistant',
+                    sessionId: currentSessionId,
+                },
+            });
 
-        // 8. Update Session
-        await prisma.session.update({
-            where: { id: currentSessionId },
-            data: { updatedAt: new Date() },
-        });
+            // 7. Update Cache
+            responseCache.set(cacheKey, responseText);
 
-        // Send completion event
-        res.write(`data: ${JSON.stringify({ done: true, messageId: assistantMsg.id })}\n\n`);
-        res.end();
-    } catch (error) {
-        console.error('Streaming Error:', error);
-        res.write(`data: ${JSON.stringify({ error: 'Failed to generate response' })}\n\n`);
+            // 8. Update Session
+            await prisma.session.update({
+                where: { id: currentSessionId },
+                data: { updatedAt: new Date() },
+            });
+
+            // Send completion event
+            res.write(`data: ${JSON.stringify({ done: true, messageId: assistantMsg.id })}\n\n`);
+            res.end();
+        } catch (error) {
+            clearInterval(keepAliveInterval);
+            console.error('Streaming Error:', error);
+            res.write(`data: ${JSON.stringify({ error: 'Failed to generate response' })}\n\n`);
+            res.end();
+        }
+    } catch (outerError) {
+        console.error('Outer Streaming Error:', outerError);
+        res.write(`data: ${JSON.stringify({ error: 'Server error' })}\n\n`);
         res.end();
     }
 });
