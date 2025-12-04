@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticateToken } = require('../middleware/auth');
 const llmService = require('../services/llm');
 const { generateResponse, generateResponseStream } = llmService;
-const { responseCache } = require('../services/cache');
+const { getCacheForModel } = require('../services/cache');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -71,11 +71,14 @@ router.post('/', authenticateToken, async (req, res) => {
     });
 
     // 3. Check Cache
-    const cacheKey = `${llmService.getCurrentModel()}:${persona}:${prompt}`;
-    if (responseCache.has(cacheKey)) {
+    const currentModel = llmService.getCurrentModel();
+    const cache = getCacheForModel(currentModel);
+    const cacheKey = `${persona}:${prompt}`;
+
+    if (cache && cache.has(cacheKey)) {
         console.log('Cache Hit!');
         trackCacheHit();
-        const cachedResponse = responseCache.get(cacheKey);
+        const cachedResponse = cache.get(cacheKey);
 
         // Save Assistant Message (even if cached)
         const assistantMsg = await prisma.message.create({
@@ -133,7 +136,9 @@ router.post('/', authenticateToken, async (req, res) => {
         });
 
         // 7. Update Cache
-        responseCache.set(cacheKey, responseText);
+        if (cache) {
+            cache.set(cacheKey, responseText);
+        }
 
         // 8. Update Session
         await prisma.session.update({
@@ -210,11 +215,14 @@ router.post('/stream', authenticateToken, async (req, res) => {
         });
 
         // 3. Check Cache
-        const cacheKey = `${llmService.getCurrentModel()}:${persona}:${prompt}`;
-        if (responseCache.has(cacheKey)) {
+        const currentModel = llmService.getCurrentModel();
+        const cache = getCacheForModel(currentModel);
+        const cacheKey = `${persona}:${prompt}`;
+
+        if (cache && cache.has(cacheKey)) {
             console.log('Cache Hit! (streaming with cached response)');
             trackCacheHit();
-            const cachedResponse = responseCache.get(cacheKey);
+            const cachedResponse = cache.get(cacheKey);
 
             // Stream cached response word by word for consistency
             const words = cachedResponse.split(' ');
@@ -290,7 +298,9 @@ router.post('/stream', authenticateToken, async (req, res) => {
             });
 
             // 7. Update Cache
-            responseCache.set(cacheKey, responseText);
+            if (cache) {
+                cache.set(cacheKey, responseText);
+            }
 
             // 8. Update Session
             await prisma.session.update({

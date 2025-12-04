@@ -1,28 +1,66 @@
 const { LRUCache } = require('lru-cache');
 
-const options = {
+// Default options
+let cacheOptions = {
     max: 500,
     ttl: 1000 * 60 * 60, // 1 hour
 };
 
-const responseCache = new LRUCache(options);
+// Map to store caches for each model
+const modelCaches = new Map();
 
-const getCacheStats = () => {
+const getCacheForModel = (modelId) => {
+    if (!modelId) return null;
+    if (!modelCaches.has(modelId)) {
+        console.log(`Creating new cache for model: ${modelId}`);
+        modelCaches.set(modelId, new LRUCache(cacheOptions));
+    }
+    return modelCaches.get(modelId);
+};
+
+const getCacheStats = (modelId) => {
+    const cache = getCacheForModel(modelId);
+    if (!cache) return { size: 0, max: cacheOptions.max, ttl: cacheOptions.ttl };
+
     return {
-        size: responseCache.size,
-        max: responseCache.max,
-        ttl: responseCache.ttl,
+        size: cache.size,
+        max: cache.max,
+        ttl: cache.ttl,
     };
 };
 
-const clearCache = () => {
-    responseCache.clear();
+const clearCache = (modelId) => {
+    if (modelId) {
+        const cache = modelCaches.get(modelId);
+        if (cache) {
+            cache.clear();
+            console.log(`Cache cleared for model: ${modelId}`);
+        }
+    } else {
+        // Clear all
+        modelCaches.forEach(cache => cache.clear());
+        console.log('All caches cleared');
+    }
 };
 
 const updateCacheConfig = (max, ttl) => {
-    // responseCache.max = max;
-    // responseCache.ttl = ttl;
-    console.warn('Dynamic cache update not supported with current lru-cache version');
+    // Check if config actually changed
+    if (max === cacheOptions.max && ttl === cacheOptions.ttl) {
+        console.log('Cache config unchanged, skipping reset.');
+        return;
+    }
+
+    cacheOptions = {
+        max: max || 500,
+        ttl: ttl || 1000 * 60 * 60
+    };
+
+    // Re-create all existing caches with new config
+    // Note: This still clears them, but now for all models
+    for (const [modelId, _] of modelCaches) {
+        modelCaches.set(modelId, new LRUCache(cacheOptions));
+    }
+    console.log(`Cache config updated: max=${max}, ttl=${ttl}. All caches reset.`);
 };
 
-module.exports = { responseCache, getCacheStats, clearCache, updateCacheConfig };
+module.exports = { getCacheForModel, getCacheStats, clearCache, updateCacheConfig };

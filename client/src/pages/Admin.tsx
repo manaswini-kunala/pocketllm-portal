@@ -83,11 +83,13 @@ const Admin: React.FC = () => {
             await api.post('/admin/config', config);
             await fetchMetrics(); // force refresh
             setSaving(false);
+            setSaving(false);
             alert('Configuration saved! Model loaded.');
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setSaving(false);
-            alert('Failed to save config');
+            const msg = err.response?.data?.message || err.message || 'Failed to save config';
+            alert('Error: ' + msg);
         }
     };
 

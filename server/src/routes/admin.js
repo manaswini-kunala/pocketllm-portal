@@ -21,7 +21,7 @@ router.get('/metrics', (req, res) => {
     const cpuCount = os.cpus().length;
     const cpuUsagePercent = Math.min(Math.round((loadAvg / cpuCount) * 100), 100);
 
-    const cacheStats = getCacheStats();
+    const cacheStats = getCacheStats(llm.getCurrentModel());
     const appMetrics = getMetrics();
 
     res.json({
@@ -46,6 +46,7 @@ router.post('/config', async (req, res) => {
         try {
             await updateLLMConfig(model, Number(contextLength), Number(responseLength));
         } catch (error) {
+            console.error('Error updating LLM config:', error);
             return res.status(500).json({ success: false, message: 'Failed to load model: ' + error.message });
         }
     }
@@ -58,7 +59,7 @@ router.post('/config', async (req, res) => {
 });
 
 router.post('/cache/clear', (req, res) => {
-    clearCache();
+    clearCache(llm.getCurrentModel());
     res.json({ success: true, message: 'Cache cleared' });
 });
 
