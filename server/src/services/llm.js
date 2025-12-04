@@ -4,39 +4,87 @@ const path = require('path');
 // Configuration
 let currentModel = 'Xenova/Qwen1.5-0.5B-Chat'; // Better reasoning, still fast
 let maxContextMessages = 10;
-let maxResponseLength = 512; // Balanced: ~70-80 words, ~10-12 seconds, better completeness
+let maxResponseLength = 256; // Shorter, more concise responses
 
 // Pipeline instance
 let generator = null;
 
+let loadingPromise = null;
+
 const initializeModel = async () => {
-    if (!generator) {
-        console.log(`Loading model: ${currentModel}...`);
-        const { pipeline } = await import('@xenova/transformers');
-        // Use text-generation for Qwen/Llama style models
-        generator = await pipeline('text-generation', currentModel);
-        console.log('Model loaded successfully.');
+    if (generator) return;
+
+    if (loadingPromise) {
+        await loadingPromise;
+        return;
     }
+
+    loadingPromise = (async () => {
+        try {
+            console.log(`Loading model: ${currentModel}...`);
+            const { pipeline, env } = await import('@xenova/transformers');
+
+            // Set cache directory to match the one used in build
+            env.cacheDir = path.join(__dirname, '../../models');
+
+            // Use text-generation for Qwen/Llama style models
+            const newGenerator = await pipeline('text-generation', currentModel);
+
+            // Warmup
+            console.log('Performing warmup generation...');
+            await newGenerator("Hello", {
+                max_new_tokens: 1,
+                do_sample: false,
+                return_full_text: false
+            });
+            console.log('Warmup complete.');
+
+            generator = newGenerator;
+            console.log('Model loaded successfully.');
+        } catch (error) {
+            console.error('Failed to initialize model:', error);
+            throw error;
+        } finally {
+            loadingPromise = null;
+        }
+    })();
+
+    await loadingPromise;
 };
 
 const updateLLMConfig = async (model, contextLen, responseLen) => {
     if (model && model !== currentModel) {
         currentModel = model;
-        generator = null; // Force reload
+
+        if (generator) {
+            console.log('Disposing old model...');
+            const memBefore = process.memoryUsage();
+            console.log(`Memory before disposal: RSS=${Math.round(memBefore.rss / 1024 / 1024)}MB, Heap=${Math.round(memBefore.heapUsed / 1024 / 1024)}MB`);
+
+            // Attempt to dispose if method exists (common in some libraries, or just help GC)
+            if (typeof generator.dispose === 'function') {
+                await generator.dispose();
+            }
+            generator = null;
+
+            // Force garbage collection if exposed (usually not in default Node, but good practice to clear refs)
+            if (global.gc) {
+                global.gc();
+                // Give GC some time to actually reclaim memory
+                console.log('Waiting for GC...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+
+            const memAfter = process.memoryUsage();
+            console.log(`Memory after disposal: RSS=${Math.round(memAfter.rss / 1024 / 1024)}MB, Heap=${Math.round(memAfter.heapUsed / 1024 / 1024)}MB`);
+        }
+
         console.log(`Model changed to ${model}. Loading now...`);
 
         try {
             await initializeModel();
             console.log(`Model ${model} loaded successfully.`);
 
-            // CRITICAL: Warmup generation to prevent empty first response
-            console.log('Performing warmup generation...');
-            await generator("Hello", {
-                max_new_tokens: 5,
-                do_sample: false,
-                return_full_text: false
-            });
-            console.log('Warmup complete. Model is ready.');
         } catch (error) {
             console.error(`Failed to load model ${model}:`, error);
             throw error;
@@ -49,7 +97,7 @@ const updateLLMConfig = async (model, contextLen, responseLen) => {
 const generateResponse = async (prompt, context, persona) => {
     await initializeModel();
 
-    let systemPrompt = "You are a helpful AI assistant.";
+    let systemPrompt = "You are a helpful AI assistant. Be concise and to the point.";
     if (persona === 'Formal') systemPrompt = "You are a formal and professional AI assistant.";
     if (persona === 'Friendly') systemPrompt = "You are a friendly and casual AI assistant.";
     if (persona === 'Technical') systemPrompt = "You are a technical expert.";
@@ -77,6 +125,7 @@ const generateResponse = async (prompt, context, persona) => {
         temperature: 0.7,
         do_sample: true,
         top_k: 50,
+        repetition_penalty: 1.1, // Reduce repetition
         return_full_text: false // Important for text-generation pipelines
     });
 
@@ -122,6 +171,7 @@ const generateResponseStream = async (prompt, context, persona, onChunk) => {
             temperature: 0.7,
             do_sample: true,
             top_k: 50,
+            repetition_penalty: 1.1,
             return_full_text: false,
             callback_function: (beams) => {
                 callbackCalled = true;
@@ -173,6 +223,13 @@ const generateResponseStream = async (prompt, context, persona, onChunk) => {
                     // Small delay to simulate streaming
                     await new Promise(resolve => setTimeout(resolve, 50));
                 }
+            } else {
+                // Ensure we streamed everything
+                if (responseText.length > lastDecodedText.length) {
+                    const remaining = responseText.slice(lastDecodedText.length);
+                    console.log(`Streaming remaining ${remaining.length} chars...`);
+                    onChunk(remaining);
+                }
             }
         }
 
@@ -189,6 +246,7 @@ module.exports = {
     getMaxResponseLength: () => maxResponseLength,
     updateLLMConfig,
     generateResponse,
-    generateResponseStream
+    generateResponseStream,
+    initializeModel
 };
 

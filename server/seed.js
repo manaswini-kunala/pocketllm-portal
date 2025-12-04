@@ -33,6 +33,7 @@ async function seed() {
         // Create default regular user
         const userEmail = 'user@pocketllm.com';
         const userPassword = 'user123';
+        let user;
 
         const existingUser = await prisma.user.findUnique({
             where: { email: userEmail }
@@ -40,9 +41,10 @@ async function seed() {
 
         if (existingUser) {
             console.log(`✓ Regular user already exists: ${userEmail}`);
+            user = existingUser;
         } else {
             const hashedPassword = await bcrypt.hash(userPassword, 10);
-            const user = await prisma.user.create({
+            user = await prisma.user.create({
                 data: {
                     email: userEmail,
                     password: hashedPassword,
@@ -50,6 +52,39 @@ async function seed() {
                 }
             });
             console.log(`✓ Created regular user: ${user.email}`);
+        }
+
+        // Check if demo session exists
+        const existingSession = await prisma.session.findFirst({
+            where: {
+                userId: user.id,
+                title: 'Demo Conversation'
+            }
+        });
+
+        if (!existingSession) {
+            // Create a sample chat session for the regular user
+            const session = await prisma.session.create({
+                data: {
+                    userId: user.id,
+                    title: 'Demo Conversation',
+                    messages: {
+                        create: [
+                            {
+                                role: 'user',
+                                content: 'Hello! Can you help me write a poem about coding?'
+                            },
+                            {
+                                role: 'assistant',
+                                content: "Certainly! Here's a short poem about coding:\n\nIn lines of code, a world we weave,\nWhere logic flows and dreams believe.\nWith loops and functions, strict and grand,\nWe build the future, hand in hand.\n\nBugs may hide in shadows deep,\nBut patience wakes while others sleep.\nCompile, debug, and run once more,\nUntil the logic opens every door."
+                            }
+                        ]
+                    }
+                }
+            });
+            console.log(`✓ Created sample chat session: "${session.title}"`);
+        } else {
+            console.log(`✓ Demo session already exists`);
         }
 
         console.log('\n========================================');

@@ -319,3 +319,42 @@ node seed.js
 ## Support
 
 For issues or questions, please open an issue on GitHub.
+
+---
+
+## Docker Deployment
+
+You can run the entire application (Frontend + Backend) in a single Docker container.
+
+### 1. Build the Image
+
+```bash
+docker build -t pocketllm .
+```
+
+### 2. Run the Container
+
+```bash
+docker run -p 3001:3001 pocketllm
+```
+
+The application will be available at `http://localhost:3001`.
+
+### Clean Build & Run (Recommended for Testing)
+If you encounter issues or want to ensure a fresh start (clearing database and cache):
+
+```bash
+# 1. Stop any running containers (forcefully)
+docker stop $(docker ps -q) 2>/dev/null || true
+docker rm $(docker ps -aq) 2>/dev/null || true
+
+# 2. Build fresh image (ignores cache)
+docker build --no-cache -t pocketllm .
+
+# 3. Run the container
+docker run -p 3001:3001 pocketllm
+```
+
+### Notes
+- **Data Persistence**: By default, the database and downloaded models are stored *inside* the container. If you stop and remove the container, this data is lost. This is fine for testing or quick demos.
+- **Production**: For a persistent deployment, you would typically mount volumes, but for this project assignment, the simple command above is sufficient.
